@@ -34,7 +34,7 @@ const AdminDashboard = () => {
         .select("role")
         .eq("user_id", session.user.id)
         .eq("role", "admin")
-        .single();
+        .maybeSingle();
 
       if (!roleData) {
         toast({

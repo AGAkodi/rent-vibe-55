@@ -8,14 +8,36 @@ import { User as SupabaseUser } from "@supabase/supabase-js";
 const Navbar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkUserAndRoles = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-    });
+      
+      if (session?.user) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id);
+        
+        if (roles) {
+          setUserRoles(roles.map(r => r.role));
+        }
+      } else {
+        setUserRoles([]);
+      }
+    };
+
+    checkUserAndRoles();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        checkUserAndRoles();
+      } else {
+        setUserRoles([]);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -55,10 +77,24 @@ const Navbar = () => {
         <div className="flex items-center space-x-3">
           {user ? (
             <>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
-                <User className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
+              {userRoles.includes('student') && (
+                <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+                  <User className="h-4 w-4 mr-2" />
+                  Student
+                </Button>
+              )}
+              {userRoles.includes('agent') && (
+                <Button variant="ghost" size="sm" onClick={() => navigate("/agent/dashboard")}>
+                  <User className="h-4 w-4 mr-2" />
+                  Agent
+                </Button>
+              )}
+              {userRoles.includes('admin') && (
+                <Button variant="ghost" size="sm" onClick={() => navigate("/admin/dashboard")}>
+                  <User className="h-4 w-4 mr-2" />
+                  Admin
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
