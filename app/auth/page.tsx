@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,20 +28,43 @@ export default function AuthPage() {
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<"STUDENT" | "AGENT">("STUDENT");
+  const redirectingRef = useRef(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (only once)
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
+    // Only redirect if:
+    // 1. Status is authenticated (not loading)
+    // 2. We have a session with user
+    // 3. We haven't already initiated a redirect
+    if (
+      status === "authenticated" &&
+      session?.user &&
+      !redirectingRef.current
+    ) {
+      redirectingRef.current = true;
       const userRole = session.user.role;
+
+      // Use replace to avoid adding to history
       if (userRole === "ADMIN") {
-        window.location.href = "/admin/dashboard";
+        window.location.replace("/admin/dashboard");
       } else if (userRole === "AGENT") {
-        window.location.href = "/agent/dashboard";
+        window.location.replace("/agent/dashboard");
       } else {
-        window.location.href = "/dashboard";
+        window.location.replace("/dashboard");
       }
     }
   }, [session, status]);
+
+  // Show loading state while checking session
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
