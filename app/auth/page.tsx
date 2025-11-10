@@ -79,11 +79,23 @@ export default function AuthPage() {
       });
 
       if (result?.ok) {
-        // Redirect based on role
-        if (role === "AGENT") {
-          router.push("/agent/dashboard");
+        // Wait a bit for session to be established
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Get user session to determine redirect (fetch actual role from session)
+        const sessionRes = await fetch("/api/auth/session");
+        const session = await sessionRes.json();
+        const userRole = session?.user?.role;
+
+        router.refresh();
+
+        // Use hard redirect to ensure session is loaded
+        if (userRole === "ADMIN") {
+          window.location.href = "/admin/dashboard";
+        } else if (userRole === "AGENT") {
+          window.location.href = "/agent/dashboard";
         } else {
-          router.push("/dashboard");
+          window.location.href = "/dashboard";
         }
       }
     } catch (error: any) {
@@ -112,17 +124,24 @@ export default function AuthPage() {
         toast.error("Invalid credentials");
       } else if (result?.ok) {
         toast.success("Welcome back!");
+
+        // Wait a bit for session to be established
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         // Get user session to determine redirect
         const sessionRes = await fetch("/api/auth/session");
         const session = await sessionRes.json();
         const userRole = session?.user?.role;
 
+        router.refresh();
+
+        // Use hard redirect to ensure session is loaded
         if (userRole === "ADMIN") {
-          router.push("/admin/dashboard");
+          window.location.href = "/admin/dashboard";
         } else if (userRole === "AGENT") {
-          router.push("/agent/dashboard");
+          window.location.href = "/agent/dashboard";
         } else {
-          router.push("/dashboard");
+          window.location.href = "/dashboard";
         }
       }
     } catch (error: any) {
